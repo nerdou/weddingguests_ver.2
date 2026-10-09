@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>하객 명단</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=Noto+Serif+KR:wght@600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#faf7f4; --card:#ffffff; --ink:#2b2522; --sub:#7a6f69; --line:#ebe3dc;
+    --groom:#4a6fa5; --groom-soft:#e8eef7;
+    --bride:#c0607a; --bride-soft:#f9e9ee;
+    --both:#7b5ea7; --both-soft:#efe9f7;
+    --sure:#3f8a5f; --sure-soft:#e5f2ea;
+    --unsure:#c78a2c; --unsure-soft:#fbf1df;
+    --accent:#8b6f5c;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:'Noto Sans KR',system-ui,sans-serif;font-size:15px;line-height:1.5}
+  .wrap{max-width:1080px;margin:0 auto;padding:24px 16px 60px}
+  header{text-align:center;margin-bottom:22px}
+  header h1{font-family:'Noto Serif KR',serif;font-size:28px;margin:0;letter-spacing:2px}
+  header p{margin:4px 0 0;color:var(--sub);font-size:13px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px;box-shadow:0 1px 3px rgba(80,60,40,.04)}
+  .card h2{font-size:16px;margin:0 0 14px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+  .card h2 small{font-weight:400;color:var(--sub);font-size:13px}
+
+  /* 요약 표 */
+  .summary{width:100%;border-collapse:separate;border-spacing:0;text-align:center}
+  .summary th,.summary td{padding:12px 6px;border-bottom:1px solid var(--line)}
+  .summary thead th{font-size:13px;color:var(--sub);font-weight:500}
+  .summary tbody th{text-align:left;font-weight:700}
+  .summary td{font-size:22px;font-weight:700}
+  .summary td small{display:block;font-size:11px;font-weight:400;color:var(--sub)}
+  .summary tr.total th,.summary tr.total td{border-bottom:none;background:#f6f1ec}
+  .summary tr.total th{border-radius:10px 0 0 10px}
+  .summary tr.total td:last-child{border-radius:0 10px 10px 0}
+  .c-groom{color:var(--groom)} .c-bride{color:var(--bride)} .c-both{color:var(--both)} .c-sure{color:var(--sure)} .c-unsure{color:var(--unsure)}
+
+  /* 입력 폼 */
+  .grid{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;align-items:end}
+  .f{display:flex;flex-direction:column;gap:4px}
+  .f label{font-size:12px;color:var(--sub)}
+  .span2{grid-column:span 2} .span3{grid-column:span 3} .span6{grid-column:span 6}
+  input,select,textarea{font:inherit;padding:9px 10px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--ink);width:100%}
+  input:focus,select:focus{outline:2px solid #d9c6b6;border-color:#d9c6b6}
+  .seg{display:flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:#fff}
+  .seg button{flex:1;border:none;background:none;padding:9px 6px;font:inherit;cursor:pointer;color:var(--sub);white-space:nowrap}
+  .seg button+button{border-left:1px solid var(--line)}
+  .seg button.on[data-v="groom"]{background:var(--groom);color:#fff}
+  .seg button.on[data-v="bride"]{background:var(--bride);color:#fff}
+  .seg button.on[data-v="both"]{background:var(--both);color:#fff}
+  .seg button.on[data-v="sure"]{background:var(--sure);color:#fff}
+  .seg button.on[data-v="unsure"]{background:var(--unsure);color:#fff}
+  .seg button.on[data-v="all"]{background:var(--accent);color:#fff}
+  .btn{font:inherit;border:1px solid var(--line);background:#fff;border-radius:9px;padding:9px 14px;cursor:pointer;color:var(--ink)}
+  .btn:hover{background:#f6f1ec}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}
+  .btn.primary:hover{filter:brightness(1.07)}
+  .btn.sm{padding:5px 10px;font-size:13px}
+  .btn.danger{color:#b33}
+  .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+
+  /* 필터 결과 */
+  .result{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0 6px}
+  .pill{flex:1;min-width:120px;border-radius:12px;padding:12px 14px;background:#f6f1ec}
+  .pill b{display:block;font-size:24px}
+  .pill span{font-size:12px;color:var(--sub)}
+  .pill.sure{background:var(--sure-soft)} .pill.unsure{background:var(--unsure-soft)}
+  .cattable{width:100%;border-collapse:collapse;font-size:14px;margin-top:10px}
+  .cattable th,.cattable td{padding:8px;border-bottom:1px solid var(--line);text-align:right}
+  .cattable th:first-child,.cattable td:first-child,.cattable th:nth-child(2),.cattable td:nth-child(2){text-align:left}
+  .cattable thead th{color:var(--sub);font-weight:500;font-size:12px}
+
+  /* 명단 */
+  .list{width:100%;border-collapse:collapse}
+  .list th{font-size:12px;color:var(--sub);font-weight:500;text-align:left;padding:8px;border-bottom:1px solid var(--line);white-space:nowrap}
+  .list td{padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+  .list td.num{text-align:center;font-weight:700}
+  .tag{display:inline-block;padding:2px 9px;border-radius:99px;font-size:12px;font-weight:500;white-space:nowrap}
+  .tag.groom{background:var(--groom-soft);color:var(--groom)}
+  .tag.bride{background:var(--bride-soft);color:var(--bride)}
+  .tag.both{background:var(--both-soft);color:var(--both)}
+  .tag.sure{background:var(--sure-soft);color:var(--sure);cursor:pointer;border:none;font:inherit;font-size:12px}
+  .tag.unsure{background:var(--unsure-soft);color:var(--unsure);cursor:pointer;border:none;font:inherit;font-size:12px}
+  .memo{color:var(--sub);font-size:13px}
+  .empty{text-align:center;color:var(--sub);padding:30px 0}
+  .acts{white-space:nowrap;text-align:right}
+
+  dialog{border:none;border-radius:14px;padding:0;max-width:720px;width:calc(100% - 32px);box-shadow:0 10px 40px rgba(0,0,0,.2)}
+  dialog::backdrop{background:rgba(40,30,25,.35)}
+  .dlg{padding:20px}
+  .dlg h3{margin:0 0 14px}
+  .catcols{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+  .catcol h4{margin:0 0 8px;font-size:14px}
+  .catitem{display:flex;justify-content:space-between;align-items:center;padding:6px 8px;border:1px solid var(--line);border-radius:8px;margin-bottom:6px;font-size:14px}
+  .catitem button{border:none;background:none;color:#b33;cursor:pointer;font-size:16px;line-height:1}
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#2b2522;color:#fff;padding:10px 18px;border-radius:99px;font-size:14px;opacity:0;transition:opacity .25s;pointer-events:none}
+  .toast.show{opacity:1}
+
+  /* 입장 화면 */
+  #gate{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:16px;z-index:50}
+  #gate .box{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:32px 24px;width:100%;max-width:340px;text-align:center;box-shadow:0 6px 30px rgba(80,60,40,.08)}
+  #gate h1{font-family:'Noto Serif KR',serif;font-size:26px;margin:0 0 4px;letter-spacing:2px}
+  #gate p{color:var(--sub);font-size:13px;margin:0 0 20px}
+  #gate input[type=password]{text-align:center;font-size:22px;letter-spacing:8px;margin-bottom:10px}
+  #gate .err{color:#b33;font-size:13px;min-height:20px;margin:6px 0 0}
+  #gate label.remember{display:flex;gap:6px;justify-content:center;align-items:center;font-size:13px;color:var(--sub);margin-top:12px;cursor:pointer}
+  #gate label.remember input{width:auto}
+  body.locked .wrap{display:none}
+  .topbar{display:flex;justify-content:flex-end;gap:8px;align-items:center;margin-bottom:6px}
+  .status{font-size:12px;padding:3px 10px;border-radius:99px;background:#f0ebe6;color:var(--sub)}
+  .status.cloud{background:var(--sure-soft);color:var(--sure)}
+  .status.err{background:#fbe5e5;color:#b33}
+
+  @media (max-width:760px){
+    .grid{grid-template-columns:repeat(2,1fr)}
+    .span2,.span3,.span6{grid-column:span 2}
+    .summary td{font-size:18px}
+    .catcols{grid-template-columns:1fr}
+    .list .hide-m{display:none}
+  }
+  @media print{
+    .noprint{display:none!important}
+    body{background:#fff}
+    .card{box-shadow:none;break-inside:avoid}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar noprint">
+    <span class="status" id="syncStatus"></span>
+    <button class="btn sm" id="lockBtn">잠금</button>
+  </div>
+  <header>
+    <h1>하객 명단</h1>
+    <p>신랑 · 신부 · 겹지인 하객을 기록하고 인원을 한눈에 확인하세요</p>
+  </header>
+
+  <!-- 전체 요약 -->
+  <section class="card">
+    <h2>전체 인원 요약 <small>단위: 명</small></h2>
+    <table class="summary">
+      <thead><tr><th></th><th class="c-sure">참석 확실</th><th class="c-unsure">참석 불확실</th><th>합계 (확실+불확실)</th></tr></thead>
+      <tbody id="summaryBody"></tbody>
+    </table>
+  </section>
+
+  <!-- 입력 -->
+  <section class="card noprint">
+    <h2 id="formTitle">하객 추가 <button class="btn sm" id="openCat" type="button">카테고리 관리</button></h2>
+    <form id="guestForm" class="grid" autocomplete="off">
+      <div class="f span2"><label>구분</label>
+        <div class="seg" id="fSide"><button type="button" data-v="groom" class="on">신랑측</button><button type="button" data-v="bride">신부측</button><button type="button" data-v="both">겹지인</button></div>
+      </div>
+      <div class="f span2"><label>카테고리</label><select id="fCat"></select></div>
+      <div class="f span2"><label>참석 여부</label>
+        <div class="seg" id="fStatus"><button type="button" data-v="sure" class="on">확실</button><button type="button" data-v="unsure">불확실</button></div>
+      </div>
+      <div class="f span6"><label>이름 <span style="color:var(--accent)">— 입력 후 Enter를 누르면 바로 추가돼요</span></label>
+        <div class="row" style="flex-wrap:nowrap">
+          <input id="fName" placeholder="예: 김철수 (Enter)" required autofocus>
+          <button type="button" class="btn" id="cancelEdit" hidden style="white-space:nowrap">수정 취소</button>
+          <button type="submit" class="btn primary" id="submitBtn" style="white-space:nowrap">추가</button>
+        </div>
+      </div>
+    </form>
+  </section>
+
+  <!-- 필터 & 결과 -->
+  <section class="card">
+    <h2>필터로 인원 확인하기</h2>
+    <div class="grid noprint">
+      <div class="f span2"><label>구분</label>
+        <div class="seg" id="qSide"><button type="button" data-v="all" class="on">전체</button><button type="button" data-v="groom">신랑측</button><button type="button" data-v="bride">신부측</button><button type="button" data-v="both">겹지인</button></div>
+      </div>
+      <div class="f span2"><label>참석 여부</label>
+        <div class="seg" id="qStatus"><button type="button" data-v="all" class="on">확실+불확실</button><button type="button" data-v="sure">확실만</button><button type="button" data-v="unsure">불확실만</button></div>
+      </div>
+      <div class="f"><label>카테고리</label><select id="qCat"></select></div>
+      <div class="f"><label>이름 검색</label><input id="qText" placeholder="검색"></div>
+    </div>
+
+    <div class="result" id="resultPills"></div>
+    <div class="row noprint" style="justify-content:flex-end;margin-top:8px">
+      <span class="memo">카테고리별 표 정렬</span>
+      <select id="catSort" style="width:auto;padding:5px 8px;font-size:13px">
+        <option value="default">기본 순서</option>
+        <option value="desc">인원 많은 순</option>
+        <option value="asc">인원 적은 순</option>
+        <option value="name">카테고리 가나다순</option>
+      </select>
+    </div>
+    <table class="cattable" id="catTable"></table>
+  </section>
+
+  <!-- 명단 -->
+  <section class="card">
+    <h2><span>하객 명단 <small id="listInfo"></small></span>
+      <span class="row noprint">
+        <select id="sortSel" style="width:auto;padding:5px 8px;font-size:13px" title="정렬">
+          <option value="recent">등록 최신순</option>
+          <option value="old">등록순</option>
+          <option value="name">가나다순 (ㄱ→ㅎ)</option>
+          <option value="nameDesc">가나다 역순 (ㅎ→ㄱ)</option>
+          <option value="group">구분·카테고리별</option>
+        </select>
+        <button class="btn sm" id="csvBtn">엑셀 내보내기</button>
+        <button class="btn sm" id="importBtn">엑셀 불러오기</button>
+        <button class="btn sm" id="backupBtn">백업 저장</button>
+        <button class="btn sm" id="restoreBtn">백업 불러오기</button>
+        <input type="file" id="importFile" accept=".xlsx,.xls,.csv" hidden>
+        <button class="btn sm" onclick="window.print()">인쇄</button>
+        <button class="btn sm danger" id="clearBtn">전체 삭제</button>
+        <input type="file" id="restoreFile" accept=".json" hidden>
+      </span>
+    </h2>
+    <div style="overflow-x:auto">
+      <table class="list">
+        <thead><tr>
+          <th data-sort="side">구분</th><th data-sort="category">카테고리</th><th data-sort="name">이름</th>
+          <th data-sort="status">참석</th><th class="noprint"></th>
+        </tr></thead>
+        <tbody id="listBody"></tbody>
+      </table>
+    </div>
+  </section>
+</div>
+
+<!-- 카테고리 관리 -->
+<dialog id="catDlg">
+  <div class="dlg">
+    <h3>카테고리 관리</h3>
+    <div class="catcols">
+      <div class="catcol"><h4 class="c-groom">신랑측</h4><div id="catGroom"></div>
+        <div class="row"><input id="newCatGroom" placeholder="새 카테고리"><button class="btn sm" data-add="groom">추가</button></div></div>
+      <div class="catcol"><h4 class="c-bride">신부측</h4><div id="catBride"></div>
+        <div class="row"><input id="newCatBride" placeholder="새 카테고리"><button class="btn sm" data-add="bride">추가</button></div></div>
+      <div class="catcol"><h4 class="c-both">겹지인</h4><div id="catBoth"></div>
+        <div class="row"><input id="newCatBoth" placeholder="새 카테고리"><button class="btn sm" data-add="both">추가</button></div></div>
+    </div>
+    <p class="memo" style="margin:12px 0 0">카테고리를 삭제하면 해당 하객은 '기타'로 옮겨집니다.</p>
+    <div class="row" style="justify-content:flex-end;margin-top:14px"><button class="btn primary" id="closeCat">닫기</button></div>
+  </div>
+</dialog>
+
+<!-- 엑셀 불러오기 -->
+<dialog id="importDlg">
+  <div class="dlg">
+    <h3>엑셀 불러오기</h3>
+    <p id="importMsg" style="margin:0 0 6px"></p>
+    <p class="memo" style="margin:0">· <b>기존 명단에 추가</b>: 지금 명단은 그대로 두고, 같은 구분에 같은 이름이 없는 하객만 추가해요.<br>· <b>명단 바꾸기</b>: 지금 명단을 지우고 파일 내용으로 바꿔요.</p>
+    <div class="row" style="justify-content:flex-end;margin-top:16px">
+      <button class="btn" id="importCancel">취소</button>
+      <button class="btn" id="importReplace">명단 바꾸기</button>
+      <button class="btn primary" id="importMerge">기존 명단에 추가</button>
+    </div>
+  </div>
+</dialog>
+
+<div class="toast" id="toast"></div>
+
+<div id="gate">
+  <form class="box" id="gateForm" autocomplete="off">
+    <h1>하객 명단</h1>
+    <p>비밀번호를 입력하고 입장하세요</p>
+    <input type="password" id="gatePw" inputmode="numeric" placeholder="••••" autofocus>
+    <button type="submit" class="btn primary" style="width:100%" id="gateBtn">입장</button>
+    <div class="err" id="gateErr"></div>
+    <label class="remember"><input type="checkbox" id="gateRemember"> 이 기기에서 비밀번호 기억하기</label>
+  </form>
+</div>
+
+<script>
+/* =====================================================================
+   ▼ Firebase 설정 — Firebase 콘솔 > 프로젝트 설정 > 내 앱 에 있는
+     firebaseConfig 값을 아래에 그대로 붙여넣으세요.
+     apiKey가 비어 있으면 이 브라우저에만 저장하는 모드로 동작합니다.
+   ===================================================================== */
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyBZm3Pg7dyEJUm7mbshhIU_6kpzwbeOBXI",
+  authDomain: "weddingguest-ver1.firebaseapp.com",
+  projectId: "weddingguest-ver1",
+  storageBucket: "weddingguest-ver1.firebasestorage.app",
+  messagingSenderId: "869728780464",
+  appId: "1:869728780464:web:d019bf7e1ff70322763b75",
+  measurementId: "G-073DB88FBK"
+};
+/* ===================================================================== */
+
+// 비밀번호 '0913'의 지문(SHA-256). 비밀번호를 바꾸려면 이 값과 Firestore 규칙을 함께 바꿔야 해요.
+const PASS_HASH = 'eafd4d25fde5bada6711cf294c32aecb65c50a1bd98b03cd3a7d55a030656dec';
+const KEY = 'wedding-guest-list-v1';
+const SIDE = {groom:'신랑측', bride:'신부측', both:'겹지인'};
+const SIDE_ORDER = ['groom','bride','both'];
+const BOTH_CATS = ['친구','직장','지인','기타'];
+const STATUS = {sure:'확실', unsure:'불확실'};
+const DEFAULT_CATS = ['가족','친척','친구','직장','지인','기타'];
+
+let state = {
+  categories:{groom:[...DEFAULT_CATS], bride:[...DEFAULT_CATS], both:[...BOTH_CATS]},
+  guests:[]
+};
+let form = {side:'groom', status:'sure'};
+let filter = {side:'all', status:'all', category:'all', text:''};
+let sortMode = 'recent', catSort = 'default';
+const ko = (a,b) => String(a).localeCompare(String(b),'ko',{numeric:true});
+function sortList(list){
+  const idx = new Map(state.guests.map((g,i)=>[g.id,i]));
+  const arr = [...list];
+  switch(sortMode){
+    case 'recent':   return arr.sort((a,b)=>idx.get(b.id)-idx.get(a.id));
+    case 'old':      return arr.sort((a,b)=>idx.get(a.id)-idx.get(b.id));
+    case 'name':     return arr.sort((a,b)=>ko(a.name,b.name));
+    case 'nameDesc': return arr.sort((a,b)=>ko(b.name,a.name));
+    case 'group':    return arr.sort((a,b)=>
+      SIDE_ORDER.indexOf(a.side)-SIDE_ORDER.indexOf(b.side) ||
+      state.categories[a.side].indexOf(a.category)-state.categories[b.side].indexOf(b.category) ||
+      ko(a.name,b.name));
+  }
+  return arr;
+}
+let editingId = null;
+
+// ---------- 저장 ----------
+function load(){
+  try{
+    const raw = localStorage.getItem(KEY);
+    if(raw){ const d = JSON.parse(raw); if(d && d.guests && d.categories) state = normalize(d); }
+  }catch(e){}
+}
+function normalize(d){
+  d.guests.forEach((g,i)=>{ g.count=1; if(typeof g.createdAt!=='number') g.createdAt=i; });
+  if(!d.categories.both) d.categories.both = [...BOTH_CATS];
+  return d;
+}
+function save(){
+  if(cloud){ cloudCommit(); return; }
+  try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){ toast('브라우저 저장이 막혀 있어요. 백업 저장을 이용하세요.'); }
+}
+
+// ---------- Firebase 실시간 저장 ----------
+// 구조: weddings/w_<비밀번호지문>  (카테고리)
+//       weddings/w_<비밀번호지문>/guests/<하객id>  (하객 1명 = 문서 1개 → 두 사람이 동시에 써도 덮어쓰지 않아요)
+let cloud = null;            // {fs, mainRef, guestsCol}
+let synced = new Map();      // 서버에 반영된 하객 (id → JSON)
+let syncedCats = '';
+const pick = g => ({name:g.name, side:g.side, category:g.category, status:g.status, createdAt:g.createdAt});
+function setStatus(text, cls){ const s=$('#syncStatus'); s.textContent=text; s.className='status '+(cls||''); }
+
+async function cloudCommit(){
+  const {fs, mainRef, guestsCol} = cloud;
+  const ops = [];
+  const cur = new Map(state.guests.map(g=>[g.id,g]));
+  cur.forEach((g,id)=>{ const j=JSON.stringify(pick(g)); if(synced.get(id)!==j){ ops.push(b=>b.set(fs.doc(guestsCol,id), pick(g))); synced.set(id,j); } });
+  [...synced.keys()].forEach(id=>{ if(!cur.has(id)){ ops.push(b=>b.delete(fs.doc(guestsCol,id))); synced.delete(id); } });
+  const cj = JSON.stringify(state.categories);
+  if(cj!==syncedCats){ ops.push(b=>b.set(mainRef, {categories:state.categories}, {merge:true})); syncedCats=cj; }
+  if(!ops.length) return;
+  setStatus('저장 중…');
+  try{
+    for(let i=0;i<ops.length;i+=450){
+      const b = fs.writeBatch(cloud.db);
+      ops.slice(i,i+450).forEach(op=>op(b));
+      await b.commit();
+    }
+    setStatus('☁ 실시간 저장됨','cloud');
+  }catch(e){
+    setStatus('저장 실패','err');
+    toast('저장하지 못했어요. 인터넷 연결을 확인해 주세요.');
+  }
+}
+
+async function startCloud(docId){
+  const V = '10.12.2';
+  const appMod = await import(`https://www.gstatic.com/firebasejs/${V}/firebase-app.js`);
+  const fs = await import(`https://www.gstatic.com/firebasejs/${V}/firebase-firestore.js`);
+  const app = appMod.initializeApp(FIREBASE_CONFIG);
+  const db = fs.getFirestore(app);
+  const mainRef = fs.doc(db, 'weddings', docId);
+  const guestsCol = fs.collection(mainRef, 'guests');
+
+  const [mainSnap, gSnap] = await Promise.all([fs.getDoc(mainRef), fs.getDocs(guestsCol)]);
+  cloud = {fs, db, mainRef, guestsCol};
+
+  load(); // 이 브라우저에 저장돼 있던 명단
+  const local = state;
+  const cloudCats = mainSnap.exists() ? mainSnap.data().categories : null;
+  const cloudGuests = gSnap.docs.map(d=>({id:d.id, ...d.data(), count:1}));
+
+  if(!cloudGuests.length && local.guests.length && localStorage.getItem(KEY+'-migrated')!=='1'
+     && confirm(`이 브라우저에 저장된 하객 ${local.guests.length}명을 Firebase로 옮길까요?\n(옮기면 다른 기기에서도 같은 명단을 볼 수 있어요)`)){
+    state = local;                      // synced가 비어 있으므로 save() 때 전부 올라가요
+    try{ localStorage.setItem(KEY+'-migrated','1'); }catch(e){}
+  }else{
+    state = normalize({categories: cloudCats || local.categories, guests: cloudGuests});
+    cloudGuests.forEach(g=>synced.set(g.id, JSON.stringify(pick(g))));
+    if(cloudCats) syncedCats = JSON.stringify(state.categories);
+  }
+  save();
+
+  // 다른 기기에서 바뀐 내용을 실시간으로 받아요
+  fs.onSnapshot(mainRef, s=>{
+    if(!s.exists() || !s.data().categories) return;
+    state.categories = normalize({categories:s.data().categories, guests:[]}).categories;
+    syncedCats = JSON.stringify(state.categories);
+    renderFormCats(); renderAll();
+  });
+  fs.onSnapshot(guestsCol, s=>{
+    state.guests = s.docs.map(d=>({id:d.id, ...d.data(), count:1})).sort((a,b)=>a.createdAt-b.createdAt);
+    synced = new Map(state.guests.map(g=>[g.id, JSON.stringify(pick(g))]));
+    if(editingId && !state.guests.some(g=>g.id===editingId)) endEdit();
+    renderAll();
+    if(!s.metadata.hasPendingWrites) setStatus('☁ 실시간 저장됨','cloud');
+  }, ()=>setStatus('연결 끊김','err'));
+}
+
+// ---------- 유틸 ----------
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const sum = arr => arr.reduce((a,g)=>a+(Number(g.count)||0),0);
+function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('show'),1800); }
+function segInit(el, onChange){
+  el.addEventListener('click', e=>{
+    const b = e.target.closest('button'); if(!b) return;
+    el.querySelectorAll('button').forEach(x=>x.classList.toggle('on', x===b));
+    onChange(b.dataset.v);
+  });
+}
+function segSet(el, v){ el.querySelectorAll('button').forEach(x=>x.classList.toggle('on', x.dataset.v===v)); }
+
+// ---------- 렌더 ----------
+function renderSummary(){
+  const g = state.guests;
+  const cell = (side, status) => sum(g.filter(x => (side==='all'||x.side===side) && (status==='all'||x.status===status)));
+  const cnt = (side, status) => g.filter(x => (side==='all'||x.side===side) && (status==='all'||x.status===status)).length;
+  const row = (side, label, cls, total) => `
+    <tr class="${total?'total':''}"><th class="${cls}">${label}</th>
+      <td class="c-sure">${cell(side,'sure')}</td>
+      <td class="c-unsure">${cell(side,'unsure')}</td>
+      <td>${cell(side,'all')}</td></tr>`;
+  $('#summaryBody').innerHTML = row('groom','신랑측','c-groom') + row('bride','신부측','c-bride') + row('both','겹지인','c-both') + row('all','합계','',true);
+}
+
+function renderFormCats(keep){
+  const sel = $('#fCat'); const cur = keep ?? sel.value;
+  sel.innerHTML = state.categories[form.side].map(c=>`<option>${esc(c)}</option>`).join('');
+  if(state.categories[form.side].includes(cur)) sel.value = cur;
+}
+
+function renderFilterCats(){
+  const sel = $('#qCat');
+  let cats = filter.side==='all'
+    ? [...new Set([...state.categories.groom, ...state.categories.bride, ...state.categories.both])]
+    : state.categories[filter.side];
+  if(filter.category!=='all' && !cats.includes(filter.category)) filter.category='all';
+  sel.innerHTML = `<option value="all">전체</option>` + cats.map(c=>`<option ${c===filter.category?'selected':''}>${esc(c)}</option>`).join('');
+}
+
+function filtered(){
+  const t = filter.text.trim().toLowerCase();
+  return state.guests.filter(g =>
+    (filter.side==='all' || g.side===filter.side) &&
+    (filter.status==='all' || g.status===filter.status) &&
+    (filter.category==='all' || g.category===filter.category) &&
+    (!t || g.name.toLowerCase().includes(t) || (g.memo||'').toLowerCase().includes(t))
+  );
+}
+
+function renderResult(){
+  const list = filtered();
+  const label = [
+    filter.side==='all' ? '신랑+신부+겹지인' : SIDE[filter.side],
+    filter.status==='all' ? '확실+불확실' : STATUS[filter.status]+'만',
+    filter.category==='all' ? null : filter.category
+  ].filter(Boolean).join(' · ');
+  const sure = list.filter(g=>g.status==='sure'), unsure = list.filter(g=>g.status==='unsure');
+  let pills = `<div class="pill"><span>필터 결과 (${esc(label)})</span><b>${sum(list)}명</b></div>`;
+  if(filter.status==='all'){
+    pills += `<div class="pill sure"><span>그중 확실</span><b class="c-sure">${sum(sure)}명</b></div>
+              <div class="pill unsure"><span>그중 불확실</span><b class="c-unsure">${sum(unsure)}명</b></div>`;
+  }
+  if(filter.side==='all'){
+    const n = s => sum(list.filter(g=>g.side===s));
+    pills += `<div class="pill"><span>신랑측 / 신부측 / 겹지인</span><b><span style="font-size:24px;color:var(--groom)">${n('groom')}</span> / <span style="font-size:24px;color:var(--bride)">${n('bride')}</span> / <span style="font-size:24px;color:var(--both)">${n('both')}</span></b></div>`;
+  }
+  $('#resultPills').innerHTML = pills;
+
+  // 카테고리별 표
+  const groups = {};
+  list.forEach(g => {
+    const k = g.side+'|'+g.category;
+    (groups[k] ||= {side:g.side, category:g.category, sure:0, unsure:0});
+    groups[k][g.status] += Number(g.count)||0;
+  });
+  const order = s => [...state.categories[s]];
+  const base = (a,b)=> a.side!==b.side ? SIDE_ORDER.indexOf(a.side)-SIDE_ORDER.indexOf(b.side) : order(a.side).indexOf(a.category)-order(b.side).indexOf(b.category);
+  const tot = r => r.sure+r.unsure;
+  const rows = Object.values(groups).sort(
+    catSort==='desc' ? (a,b)=>tot(b)-tot(a) || base(a,b) :
+    catSort==='asc'  ? (a,b)=>tot(a)-tot(b) || base(a,b) :
+    catSort==='name' ? (a,b)=>ko(a.category,b.category) || base(a,b) : base);
+  if(!rows.length){ $('#catTable').innerHTML=''; return; }
+  $('#catTable').innerHTML = `<thead><tr><th>구분</th><th>카테고리</th><th class="c-sure">확실</th><th class="c-unsure">불확실</th><th>합계</th></tr></thead><tbody>`+
+    rows.map(r=>`<tr><td><span class="tag ${r.side}">${SIDE[r.side]}</span></td><td>${esc(r.category)}</td>
+      <td class="c-sure">${r.sure}</td><td class="c-unsure">${r.unsure}</td><td><b>${r.sure+r.unsure}</b></td></tr>`).join('')+'</tbody>';
+}
+
+function renderList(){
+  const list = sortList(filtered());
+  $('#listInfo').textContent = `· 표시 ${list.length}명 / 전체 ${state.guests.length}명`;
+  if(!list.length){
+    $('#listBody').innerHTML = `<tr><td colspan="5" class="empty">${state.guests.length?'조건에 맞는 하객이 없어요.':'아직 등록된 하객이 없어요. 위에서 추가해 보세요.'}</td></tr>`;
+    return;
+  }
+  $('#listBody').innerHTML = list.map(g=>`
+    <tr>
+      <td><span class="tag ${g.side}">${SIDE[g.side]}</span></td>
+      <td>${esc(g.category)}</td>
+      <td><b>${esc(g.name)}</b></td>
+      <td><button class="tag ${g.status}" data-toggle="${g.id}" title="눌러서 바꾸기">${STATUS[g.status]}</button></td>
+      <td class="acts noprint"><button class="btn sm" data-edit="${g.id}">수정</button> <button class="btn sm danger" data-del="${g.id}">삭제</button></td>
+    </tr>`).join('');
+}
+
+function renderAll(){ renderSummary(); renderFilterCats(); renderResult(); renderList(); }
+
+// ---------- 입력 폼 ----------
+segInit($('#fSide'), v=>{ form.side=v; renderFormCats(); });
+segInit($('#fStatus'), v=>{ form.status=v; });
+
+$('#guestForm').addEventListener('submit', e=>{
+  e.preventDefault();
+  const name = $('#fName').value.trim();
+  if(!name) return;
+  const data = { name, side:form.side, category:$('#fCat').value, status:form.status, count:1 };
+  if(!editingId && state.guests.some(g=>g.name===name && g.side===form.side)){
+    toast(`같은 이름(${name})이 ${SIDE[form.side]}에 이미 있어요 — 추가는 됐어요`);
+  }
+  if(editingId){
+    Object.assign(state.guests.find(g=>g.id===editingId), data);
+    toast(`${name} 님 정보를 수정했어요`);
+    endEdit();
+  }else{
+    state.guests.push({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6), ...data, createdAt:Date.now()});
+    if(!$('#toast').classList.contains('show')) toast(`${name} 님을 추가했어요`);
+  }
+  save();
+  $('#fName').value='';
+  $('#fName').focus();
+  renderAll();
+});
+
+function startEdit(id){
+  const g = state.guests.find(x=>x.id===id); if(!g) return;
+  editingId = id;
+  form.side=g.side; form.status=g.status;
+  segSet($('#fSide'), g.side); segSet($('#fStatus'), g.status);
+  renderFormCats(g.category);
+  $('#fName').value=g.name;
+  $('#formTitle').firstChild.textContent='하객 정보 수정 ';
+  $('#submitBtn').textContent='수정 저장';
+  $('#cancelEdit').hidden=false;
+  $('#guestForm').scrollIntoView({behavior:'smooth', block:'center'});
+  $('#fName').focus();
+}
+function endEdit(){
+  editingId=null;
+  $('#formTitle').firstChild.textContent='하객 추가 ';
+  $('#submitBtn').textContent='추가';
+  $('#cancelEdit').hidden=true;
+  $('#fName').value='';
+}
+$('#cancelEdit').onclick = endEdit;
+
+// ---------- 명단 동작 ----------
+$('#listBody').addEventListener('click', e=>{
+  const t = e.target;
+  if(t.dataset.toggle){
+    const g = state.guests.find(x=>x.id===t.dataset.toggle);
+    g.status = g.status==='sure'?'unsure':'sure'; save(); renderAll();
+  }else if(t.dataset.edit){ startEdit(t.dataset.edit); }
+  else if(t.dataset.del){
+    const g = state.guests.find(x=>x.id===t.dataset.del);
+    if(confirm(`${g.name} 님을 명단에서 삭제할까요?`)){
+      state.guests = state.guests.filter(x=>x.id!==g.id);
+      if(editingId===g.id) endEdit();
+      save(); renderAll();
+    }
+  }
+});
+$('#sortSel').addEventListener('change', e=>{ sortMode=e.target.value; renderList(); });
+$('#catSort').addEventListener('change', e=>{ catSort=e.target.value; renderResult(); });
+
+// ---------- 필터 ----------
+segInit($('#qSide'), v=>{ filter.side=v; renderAll(); });
+segInit($('#qStatus'), v=>{ filter.status=v; renderResult(); renderList(); });
+$('#qCat').addEventListener('change', e=>{ filter.category=e.target.value; renderResult(); renderList(); });
+$('#qText').addEventListener('input', e=>{ filter.text=e.target.value; renderResult(); renderList(); });
+
+// ---------- 카테고리 관리 ----------
+function renderCatDlg(){
+  SIDE_ORDER.forEach(s=>{
+    const box = $({groom:'#catGroom',bride:'#catBride',both:'#catBoth'}[s]);
+    box.innerHTML = state.categories[s].map(c=>{
+      const n = state.guests.filter(g=>g.side===s&&g.category===c).length;
+      return `<div class="catitem"><span>${esc(c)} <small class="memo">${n}명</small></span>${c==='기타'?'':`<button data-delcat="${s}" data-name="${esc(c)}" title="삭제">×</button>`}</div>`;
+    }).join('');
+  });
+}
+$('#openCat').onclick = ()=>{ renderCatDlg(); $('#catDlg').showModal(); };
+$('#closeCat').onclick = ()=>{ $('#catDlg').close(); renderFormCats(); renderAll(); };
+$('#catDlg').addEventListener('click', e=>{
+  const t = e.target;
+  if(t.dataset.add){
+    const s = t.dataset.add; const inp = $({groom:'#newCatGroom',bride:'#newCatBride',both:'#newCatBoth'}[s]);
+    const name = inp.value.trim();
+    if(!name) return;
+    if(state.categories[s].includes(name)){ toast('이미 있는 카테고리예요'); return; }
+    const i = state.categories[s].indexOf('기타');
+    i>=0 ? state.categories[s].splice(i,0,name) : state.categories[s].push(name);
+    inp.value=''; save(); renderCatDlg();
+  }
+  if(t.dataset.delcat){
+    const s=t.dataset.delcat, name=t.dataset.name;
+    const n = state.guests.filter(g=>g.side===s&&g.category===name).length;
+    if(n && !confirm(`'${name}'에 하객 ${n}명이 있어요. 삭제하면 '기타'로 옮겨집니다. 계속할까요?`)) return;
+    state.categories[s] = state.categories[s].filter(c=>c!==name);
+    if(!state.categories[s].includes('기타')) state.categories[s].push('기타');
+    state.guests.forEach(g=>{ if(g.side===s&&g.category===name) g.category='기타'; });
+    save(); renderCatDlg();
+  }
+});
+[['#newCatGroom','groom'],['#newCatBride','bride'],['#newCatBoth','both']].forEach(([id,s])=>$(id).addEventListener('keydown',e=>{
+  if(e.key==='Enter'){ e.preventDefault(); $(`[data-add="${s}"]`).click(); }
+}));
+
+// ---------- 내보내기 / 백업 ----------
+function download(name, content, type){
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([content],{type}));
+  a.download = name; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+const today = ()=>new Date().toISOString().slice(0,10);
+// 엑셀 라이브러리(SheetJS)는 필요할 때만 불러와요
+let xlsxPromise = null;
+function loadXLSX(){
+  if(window.XLSX) return Promise.resolve(window.XLSX);
+  return xlsxPromise ||= new Promise((ok, no)=>{
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+    s.onload = ()=>ok(window.XLSX);
+    s.onerror = ()=>{ xlsxPromise=null; no(new Error('xlsx')); };
+    document.head.appendChild(s);
+  });
+}
+const HEAD = ['구분','카테고리','이름','참석여부'];
+$('#csvBtn').onclick = async ()=>{
+  // 데이터 보관용이므로 필터와 상관없이 전체 명단을 현재 정렬 순서로 내보내요
+  const rows = [HEAD, ...sortList(state.guests).map(g=>[SIDE[g.side],g.category,g.name,STATUS[g.status]])];
+  try{
+    const X = await loadXLSX();
+    const ws = X.utils.aoa_to_sheet(rows);
+    ws['!cols'] = [{wch:8},{wch:12},{wch:14},{wch:10}];
+    const wb = X.utils.book_new(); X.utils.book_append_sheet(wb, ws, '하객명단');
+    X.writeFile(wb, `하객명단_${today()}.xlsx`);
+    toast(`전체 ${state.guests.length}명을 엑셀 파일로 저장했어요`);
+  }catch(e){
+    const q = v => `"${String(v??'').replace(/"/g,'""')}"`;
+    download(`하객명단_${today()}.csv`, '﻿'+rows.map(r=>r.map(q).join(',')).join('\r\n'), 'text/csv;charset=utf-8');
+    toast('인터넷 연결이 없어 CSV(엑셀에서 열 수 있음)로 저장했어요');
+  }
+};
+
+// ---------- 엑셀 불러오기 ----------
+function parseCSV(text){
+  const rows=[]; let row=[], f='', q=false;
+  for(let i=0;i<text.length;i++){
+    const c=text[i];
+    if(q){ if(c==='"'){ if(text[i+1]==='"'){f+='"';i++;} else q=false; } else f+=c; }
+    else if(c==='"') q=true;
+    else if(c===','){ row.push(f); f=''; }
+    else if(c==='\n'||c==='\r'){ if(c==='\r'&&text[i+1]==='\n') i++; row.push(f); rows.push(row); row=[]; f=''; }
+    else f+=c;
+  }
+  if(f!==''||row.length){ row.push(f); rows.push(row); }
+  return rows;
+}
+function decodeText(buf){
+  try{ return new TextDecoder('utf-8',{fatal:true}).decode(buf).replace(/^﻿/,''); }
+  catch(e){ return new TextDecoder('euc-kr').decode(buf); } // 엑셀에서 CSV로 저장한 파일(한글 윈도우)
+}
+function rowsToGuests(rows){
+  rows = rows.map(r=>r.map(v=>String(v??'').trim())).filter(r=>r.some(Boolean));
+  let col = {side:0, category:1, name:2, status:3};
+  const h = rows.findIndex(r=>r.includes('이름'));
+  if(h>=0){
+    const r = rows[h], find = (...ks)=>r.findIndex(v=>ks.some(k=>v.includes(k)));
+    col = {side:find('구분'), category:find('카테고리','분류'), name:find('이름'), status:find('참석')};
+    rows = rows.slice(h+1);
+  }
+  const out=[]; let skipped=0;
+  rows.forEach(r=>{
+    const name = r[col.name]; const sideTxt = r[col.side] ?? '';
+    const side = sideTxt.includes('겹') ? 'both' : sideTxt.includes('신랑') ? 'groom' : sideTxt.includes('신부') ? 'bride' : null;
+    if(!name || !side){ skipped++; return; }
+    out.push({ name, side,
+      category: (col.category>=0 && r[col.category]) || '기타',
+      status: (col.status>=0 && (r[col.status]||'').includes('불확')) ? 'unsure' : 'sure', count:1 });
+  });
+  return {guests:out, skipped};
+}
+let pendingImport = null;
+$('#importBtn').onclick = ()=>$('#importFile').click();
+$('#importFile').onchange = async e=>{
+  const f = e.target.files[0]; e.target.value=''; if(!f) return;
+  try{
+    const buf = await f.arrayBuffer();
+    let rows;
+    if(/\.csv$/i.test(f.name)) rows = parseCSV(decodeText(buf));
+    else{
+      const X = await loadXLSX();
+      const wb = X.read(buf, {type:'array'});
+      rows = X.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header:1, defval:''});
+    }
+    pendingImport = rowsToGuests(rows);
+    if(!pendingImport.guests.length){ alert('파일에서 하객을 찾지 못했어요.\n"구분 · 카테고리 · 이름 · 참석여부" 열이 있는지 확인해 주세요.'); return; }
+    const {guests, skipped} = pendingImport;
+    const c = s => guests.filter(g=>g.side===s).length;
+    $('#importMsg').innerHTML = `파일에서 <b>${guests.length}명</b>을 읽었어요. (신랑측 ${c('groom')} · 신부측 ${c('bride')} · 겹지인 ${c('both')})`
+      + (skipped ? `<br><span class="memo">구분이나 이름이 비어 있는 ${skipped}줄은 건너뛰었어요.</span>` : '');
+    $('#importDlg').showModal();
+  }catch(err){
+    alert(err.message==='xlsx' ? '엑셀 파일을 읽으려면 인터넷 연결이 필요해요. (CSV 파일은 연결 없이도 돼요)' : '파일을 읽지 못했어요.');
+  }
+};
+function applyImport(replace){
+  const {guests} = pendingImport;
+  if(replace) state.guests = [];
+  let added = 0;
+  guests.forEach(g=>{
+    if(!replace && state.guests.some(x=>x.side===g.side && x.name===g.name)) return;
+    const cats = state.categories[g.side];
+    if(!cats.includes(g.category)){ const i=cats.indexOf('기타'); i>=0 ? cats.splice(i,0,g.category) : cats.push(g.category); }
+    state.guests.push({id:Date.now().toString(36)+Math.random().toString(36).slice(2,8), ...g, createdAt:Date.now()+added});
+    added++;
+  });
+  save(); endEdit(); renderFormCats(); renderAll();
+  $('#importDlg').close(); pendingImport = null;
+  toast(replace ? `명단을 ${added}명으로 바꿨어요` : `${added}명을 추가했어요` + (guests.length-added ? ` (중복 ${guests.length-added}명 제외)` : ''));
+}
+$('#importMerge').onclick = ()=>applyImport(false);
+$('#importReplace').onclick = ()=>{ if(confirm('지금 명단을 모두 지우고 파일 내용으로 바꿀까요?')) applyImport(true); };
+$('#importCancel').onclick = ()=>{ $('#importDlg').close(); pendingImport=null; };
+$('#backupBtn').onclick = ()=>{
+  download(`하객명단_백업_${today()}.json`, JSON.stringify(state,null,2), 'application/json');
+  toast('백업 파일을 저장했어요');
+};
+$('#restoreBtn').onclick = ()=>$('#restoreFile').click();
+$('#restoreFile').onchange = e=>{
+  const f = e.target.files[0]; if(!f) return;
+  const r = new FileReader();
+  r.onload = ()=>{
+    try{
+      const d = JSON.parse(r.result);
+      if(!d.guests || !d.categories) throw 0;
+      if(!confirm(`백업의 하객 ${d.guests.length}명으로 현재 명단을 바꿀까요?`)) return;
+      state = normalize(d); save(); endEdit(); renderFormCats(); renderAll(); toast('백업을 불러왔어요');
+    }catch(err){ alert('올바른 백업 파일이 아니에요.'); }
+  };
+  r.readAsText(f); e.target.value='';
+};
+$('#clearBtn').onclick = ()=>{
+  if(!state.guests.length) return;
+  if(confirm('모든 하객 기록을 삭제할까요? (카테고리는 유지됩니다)\n먼저 백업 저장을 권장해요.')){
+    state.guests=[]; save(); endEdit(); renderAll();
+  }
+};
+
+// ---------- 입장 (비밀번호) ----------
+async function sha256(text){
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+const cloudEnabled = !!FIREBASE_CONFIG.apiKey;
+document.body.classList.add('locked');
+
+async function enter(hash, remember){
+  $('#gateBtn').disabled = true; $('#gateBtn').textContent = '여는 중…';
+  if(cloudEnabled){
+    try{
+      await startCloud('w_'+hash);
+    }catch(e){
+      console.error(e);
+      const code = e && e.code ? ` (${e.code})` : '';
+      if(!confirm(`Firebase에 연결하지 못했어요${code}.\n설정값과 Firestore 규칙을 확인해 주세요.\n\n일단 이 기기에만 저장하는 모드로 열까요?`)){
+        $('#gateBtn').disabled=false; $('#gateBtn').textContent='입장'; return;
+      }
+      cloud = null; load(); setStatus('이 기기에만 저장 중','err');
+    }
+  }else{
+    load(); setStatus('이 기기에만 저장 중');
+  }
+  try{ remember ? localStorage.setItem(KEY+'-pass', hash) : localStorage.removeItem(KEY+'-pass'); }catch(e){}
+  document.body.classList.remove('locked');
+  $('#gate').remove();
+  renderFormCats(); renderAll();
+  $('#fName').focus();
+}
+
+$('#gateForm').addEventListener('submit', async e=>{
+  e.preventDefault();
+  const hash = await sha256('wedding-guests|'+$('#gatePw').value.trim());
+  if(hash!==PASS_HASH){
+    $('#gateErr').textContent='비밀번호가 맞지 않아요.';
+    $('#gatePw').value=''; $('#gatePw').focus(); return;
+  }
+  enter(hash, $('#gateRemember').checked);
+});
+$('#lockBtn').onclick = ()=>{
+  try{ localStorage.removeItem(KEY+'-pass'); }catch(e){}
+  location.reload();
+};
+
+// 비밀번호를 기억해 둔 기기라면 바로 입장
+let remembered = null;
+try{ remembered = localStorage.getItem(KEY+'-pass'); }catch(e){}
+if(remembered===PASS_HASH){ $('#gateRemember').checked=true; enter(remembered, true); }
+</script>
+</body>
+</html>
